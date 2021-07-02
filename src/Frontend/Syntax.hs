@@ -9,7 +9,9 @@ data Expr
   | Call Name [Expr]
   | Var Name
   | Const Name Expr
-  | Function Name [Expr] Expr
+  | Function Name [Expr] [Expr] Expr
+  -- ^ The second list of expressions is only to allow
+  -- setting variables inside a function.
   deriving (Eq, Ord, Show)
   
 data Op

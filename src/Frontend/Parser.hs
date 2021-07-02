@@ -50,12 +50,20 @@ variable = do
   var <- identifier
   return $ Var var
 
-constVariable :: Parser Expr
-constVariable = do
-  reserved "const"
+setVariable :: Parser Expr
+setVariable = do
+  reserved "set"
   name <- identifier
   body <- expr
   return $ Const name body
+
+letVariable :: Parser Expr
+letVariable = do
+  reserved "let"
+  name <- identifier
+  body <- expr
+  return $ Const name body
+
 
 -- Currently only allows for one expression..
 -- Maybe this should be a functional programming language?
@@ -64,13 +72,19 @@ function = do
   reserved "fn"
   name <- identifier
   args <- many variable
-  body <- braces $ expr
-  return $ Function name args body
+  (consts, body) <- braces $ functionBody
+  return $ Function name args consts body
+
+functionBody :: Parser ([Expr], Expr)
+functionBody = do
+  cs <- many $ letVariable
+  returnExpression <- expr
+  return $ (cs, returnExpression)
 
 factor :: Parser Expr
 factor = try floating
       <|> try int
-      <|> try constVariable
+      <|> try setVariable
       <|> try str
       <|> try function
       <|> try call

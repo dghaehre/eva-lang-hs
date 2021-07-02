@@ -24,8 +24,8 @@ handleExpr c =
 
     Float n -> show n
 
-    Function name es e ->
-      printFunction name es e
+    Function name es consts e ->
+      printFunction name es consts e
 
     BinOp op e1 e2 ->
       "(" ++ handleExpr e1 ++ " " ++
@@ -48,11 +48,12 @@ showOp :: Op -> String
 showOp Plus = "+"
 showOp Minus = "-"
 
-printFunction :: Name -> [Expr] -> Expr -> String
-printFunction name es e =
+printFunction :: Name -> [Expr] -> [Expr] -> Expr -> String
+printFunction name es consts e =
   let args = intercalate ", " $ map handleExpr es
+      c = concat $ map handleExpr consts
   in "function " ++ name ++ "(" ++ args ++ ") " ++
-    "{\n\treturn " ++ handleExpr e ++ "\n}\n"
+    "{\n\t" ++ c ++ "\treturn " ++ handleExpr e ++ "\n}\n"
 
 printString :: String -> String
 printString s = "\"" ++ s ++ "\""
