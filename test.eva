@@ -1,0 +1,35 @@
+# This is a test
+#
+# There are currently only allowed to return one expression.
+#
+
+set world "world!"
+
+fn addTwo x {
+  x + 2
+}
+
+fn minusTwo x {
+  x - 2
+}
+
+fn timesTwo x {
+  x * 2
+}
+
+fn divideTwo x {
+  x / 2
+}
+
+
+fn hello a b {
+  "hello " + a + "  " + b
+}
+
+fn main {
+  let x = 2
+  let t = x |> addTwo |> addTwo |> minusTwo |> timesTwo |> divideTwo
+  hello(world t) |> print
+}
+
+main()
