@@ -1,21 +1,22 @@
 module Frontend.Lexer where
 
 import Text.Parsec (sepBy)
-import Text.Parsec.String (Parser)
 import Text.Parsec.Language (emptyDef)
-
+import Text.Parsec.String (Parser)
 import qualified Text.Parsec.Token as Tok
+import Text.ParserCombinators.Parsec.Token (symbol)
 
 lexer :: Tok.TokenParser ()
 lexer = Tok.makeTokenParser style
   where
-    ops = ["+","-"]
-    names = ["fn", "set", "let"]
-    style = emptyDef {
-               Tok.commentLine = "#"
-             , Tok.reservedOpNames = ops
-             , Tok.reservedNames = names
-             }
+    ops = ["+", "-", "*", "/"]
+    names = ["fn", "set", "let", "|>", "="]
+    style =
+      emptyDef
+        { Tok.commentLine = "#",
+          Tok.reservedOpNames = ops,
+          Tok.reservedNames = names
+        }
 
 integer :: Parser Integer
 integer = Tok.integer lexer
@@ -34,10 +35,6 @@ braces = Tok.braces lexer
 
 commaSep :: Parser a -> Parser [a]
 commaSep = Tok.commaSep lexer
-
--- TODO: make it work and change for commaSep
--- whiteSpaceSep :: Parser a -> Parser [a]
--- whiteSpaceSep = sepBy (Tok.symbol " ")
 
 semiSep :: Parser a -> Parser [a]
 semiSep = Tok.semiSep lexer

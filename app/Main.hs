@@ -1,9 +1,8 @@
 module Main where
 
 import Lib
-
-import System.IO
 import System.Environment
+import System.IO
 
 repl :: IO ()
 repl = do
@@ -21,3 +20,5 @@ main = do
   case args of
     [] -> repl
     [filename] -> processFile filename
+    otherwse ->
+      putStrLn $ "dont currenlty handle this arguments" ++ show otherwise

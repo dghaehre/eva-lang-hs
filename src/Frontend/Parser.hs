@@ -1,38 +1,36 @@
 module Frontend.Parser
-  ( parseExpr
-  , parseToplevel
-  ) where
+  ( parseExpr,
+    parseToplevel,
+  )
+where
 
-import Frontend.Syntax
 import Frontend.Lexer
-
+import Frontend.Syntax
 import Text.Parsec
-import Text.Parsec.String (Parser)
-
 import qualified Text.Parsec.Expr as Ex
+import Text.Parsec.String (Parser)
 import qualified Text.Parsec.Token as Tok
-
--- parse :: String -> Expr
--- parse content = undefined
 
 binary s f assoc =
   Ex.Infix (reservedOp s >> return (BinOp f)) assoc
 
-table = [[binary "+" Plus Ex.AssocLeft,
-          binary "-" Minus Ex.AssocLeft]]
+-- TODO: make sure the assoc is correct
+table =
+  [ [ binary "+" Plus Ex.AssocLeft,
+      binary "*" Multiply Ex.AssocLeft,
+      binary "/" Divide Ex.AssocLeft,
+      binary "-" Minus Ex.AssocLeft
+    ]
+  ]
 
 expr :: Parser Expr
 expr = Ex.buildExpressionParser table factor
 
 int :: Parser Expr
-int = do
-  i <- integer
-  return $ Float (fromInteger i)
+int = Float . fromInteger <$> integer
 
 floating :: Parser Expr
-floating = do
-  f <- float
-  return $ Float f
+floating = Float <$> float
 
 call :: Parser Expr
 call = do
@@ -40,15 +38,31 @@ call = do
   args <- parens $ many expr
   return $ Call name args
 
+pipeCall :: Parser String
+pipeCall = do
+  reserved "|>"
+  identifier
+
+pipeCalls :: Parser Expr
+pipeCalls = do
+  start <- orgValue
+  pipes <- many1 pipeCall
+  return $ PipeCalls start pipes
+  where
+    orgValue :: Parser Expr
+    orgValue =
+      try int
+        <|> try floating
+        <|> try str
+        <|> try call
+        <|> variable
+        <|> parens expr
+
 str :: Parser Expr
-str = do
-  s <- stringLiteral
-  return $ StringLiteral s
+str = StringLiteral <$> stringLiteral
 
 variable :: Parser Expr
-variable = do
-  var <- identifier
-  return $ Var var
+variable = Var <$> identifier
 
 setVariable :: Parser Expr
 setVariable = do
@@ -61,9 +75,9 @@ letVariable :: Parser Expr
 letVariable = do
   reserved "let"
   name <- identifier
+  reserved "="
   body <- expr
   return $ Const name body
-
 
 -- Currently only allows for one expression..
 -- Maybe this should be a functional programming language?
@@ -72,24 +86,26 @@ function = do
   reserved "fn"
   name <- identifier
   args <- many variable
-  (consts, body) <- braces $ functionBody
+  (consts, body) <- braces functionBody
   return $ Function name args consts body
 
 functionBody :: Parser ([Expr], Expr)
 functionBody = do
-  cs <- many $ letVariable
+  cs <- many letVariable
   returnExpression <- expr
-  return $ (cs, returnExpression)
+  return (cs, returnExpression)
 
 factor :: Parser Expr
-factor = try floating
-      <|> try int
-      <|> try setVariable
-      <|> try str
-      <|> try function
-      <|> try call
-      <|> variable
-      <|> parens expr
+factor =
+  try pipeCalls
+    <|> try floating
+    <|> try int
+    <|> try setVariable
+    <|> try str
+    <|> try function
+    <|> try call
+    <|> variable
+    <|> parens expr
 
 contents :: Parser a -> Parser a
 contents p = do
@@ -98,16 +114,16 @@ contents p = do
   eof
   return r
 
-
 -- TODO: Need a better name so it is more clear what this does
 defn :: Parser Expr
-defn = try function
+defn =
+  try function
     <|> expr
 
 toplevel :: Parser [Expr]
 toplevel = many $ do
-    def <- defn
-    return def
+  def <- defn
+  return def
 
 parseExpr :: String -> Either ParseError Expr
 parseExpr s = parse (contents expr) "<stdin>" s
